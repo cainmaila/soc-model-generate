@@ -57,6 +57,9 @@ export const useThreeSceneInit = () => {
     scene.add(light2)
     const controls = new OrbitControls(cameraRef.current, renderer.domElement)
     controlsRef.current = controls
+
+    cameraRef.current.position.z = 50
+
     animate()
     function animate() {
       const scene = sceneRef.current
