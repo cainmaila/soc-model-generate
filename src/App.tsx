@@ -1,9 +1,10 @@
 import './App.css'
+import { Viewer } from './view'
 
 function App() {
   return (
     <>
-      <h1>App</h1>
+      <Viewer />
     </>
   )
 }
