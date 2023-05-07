@@ -46,3 +46,9 @@
   justify-content: center;
   pointer-events: none;
 }
+
+#UI {
+  position: absolute;
+  top: 2em;
+  left: 2em;
+}
