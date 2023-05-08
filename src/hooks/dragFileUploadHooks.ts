@@ -4,6 +4,7 @@ const reader = new FileReader()
 export const useDragFileUpload = (dropbox: HTMLElement | null) => {
   const [data, setData] = useState<string | ArrayBuffer | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [off, setOff] = useState<boolean>(true)
 
   useLayoutEffect(() => {
     dropbox?.addEventListener('dragenter', dragenter, false)
@@ -23,7 +24,7 @@ export const useDragFileUpload = (dropbox: HTMLElement | null) => {
     function drop(e: DragEvent) {
       e.stopPropagation() //終止事件傳導
       e.preventDefault() //終止預設行為
-      e.dataTransfer && handleFiles(e.dataTransfer.files)
+      off && e.dataTransfer && handleFiles(e.dataTransfer.files)
     }
 
     function handleFiles(files: FileList) {
@@ -41,7 +42,7 @@ export const useDragFileUpload = (dropbox: HTMLElement | null) => {
       dropbox?.removeEventListener('dragover', dragover, false)
       dropbox?.removeEventListener('drop', drop, false)
     }
-  }, [dropbox])
+  }, [dropbox, off])
 
-  return { data, isLoading }
+  return { data, isLoading, setOff }
 }

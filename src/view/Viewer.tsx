@@ -2,11 +2,13 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 import { useThreeSceneInit } from '../hooks/threeSceneHooks'
 import { useDragFileUpload } from '../hooks/dragFileUploadHooks'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Group, LoadingManager } from 'three'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { saveJson, saveScene } from '../utils/modelFileTools'
+import { createMachine } from 'xstate'
+import { useMachine } from '@xstate/react'
 
 const manager = new LoadingManager()
 const loader = new GLTFLoader(manager)
@@ -14,24 +16,84 @@ const dracoLoader = new DRACOLoader()
 dracoLoader.setDecoderPath('/examples/jsm/libs/draco/')
 loader.setDRACOLoader(dracoLoader)
 
+const toggleMachine = createMachine({
+  id: 'xstate',
+  initial: 'none',
+  states: {
+    none: {
+      //初始化狀態
+      on: { NEXT: { target: 'uploading' }, ERROR: { target: 'error' } },
+    },
+    uploading: {
+      //上傳中
+      on: { NEXT: { target: 'analyze' }, ERROR: { target: 'error' } },
+    },
+    analyze: {
+      //分析中
+      on: { NEXT: { target: 'loaded' }, ERROR: { target: 'error' } },
+    },
+    loaded: {
+      //載入完成
+      on: { NEXT: { target: 'disassemble' }, ERROR: { target: 'error' } },
+    },
+    disassemble: {
+      //拆解中
+      on: { NEXT: { target: 'loaded' }, ERROR: { target: 'error' } },
+    },
+    error: {
+      //錯誤
+      on: { REST: 'none' },
+    },
+  },
+})
+
 function Viewer() {
   const { viewerRef, sceneRef } = useThreeSceneInit()
-  const { data, isLoading } = useDragFileUpload(viewerRef.current)
-  const [message, setMessage] = useState('請拖曳上傳一個 gltf 檔案')
+  const { data, isLoading, setOff: upLoadOff } = useDragFileUpload(viewerRef.current)
+  const [message, setMessage] = useState('')
   const [isFirstLoad, setIsFirstLoad] = useState(false)
   const [gltf, setGltf] = useState<GLTF>()
 
+  const [state, send] = useMachine(toggleMachine)
+
   useEffect(() => {
-    if (isFirstLoad && data) {
-      setMessage('')
-    } else if (!data && !isLoading && !isFirstLoad) {
-      setMessage('請拖曳上傳一個 gltf 檔案')
-    } else if (data && isLoading && !isFirstLoad) {
-      setMessage('Upload...')
-    } else {
-      setMessage('檔案解析中...')
+    switch (state.value) {
+      case 'none':
+        upLoadOff(true)
+        setMessage('請拖曳上傳一個 gltf 檔案')
+        break
+      case 'uploading':
+        upLoadOff(false)
+        setMessage('Upload...')
+        break
+      case 'analyze':
+        setMessage('檔案解析中...')
+        break
+      case 'loaded':
+        setMessage('')
+        break
+      case 'disassemble':
+        setMessage('拆解中...需要時間，請勿關閉網頁')
+        break
+      case 'error':
+        break
     }
-  }, [isLoading, isFirstLoad, data])
+  }, [state, upLoadOff])
+
+  //是否要顯示生成按鈕
+  const showGenerate = useMemo(() => {
+    return state.value === 'loaded'
+  }, [state])
+
+  useEffect(() => {
+    if (isLoading) {
+      send('NEXT') //上傳中
+    } else if (data && !isLoading) {
+      send('NEXT') //分析中
+    } else if (data && !isFirstLoad) {
+      send('NEXT') //載入完成
+    }
+  }, [isLoading, isFirstLoad, data, send])
 
   useEffect(() => {
     if (data === null) return
@@ -46,15 +108,16 @@ function Viewer() {
       undefined,
       (error) => {
         setMessage('檔案格式錯誤:' + error.message)
-        console.error(error)
+        send('ERROR')
       },
     )
-  }, [data, sceneRef, setMessage])
+  }, [data, sceneRef, setMessage, send])
 
   const handleGenerate = useCallback(() => {
     if (!gltf) return
     const tree = [] as any[]
     const queue = [] as any[]
+    send('NEXT') //拆解中
     gltf.scene.children.forEach((child) => {
       const node = {
         id: child.name,
@@ -73,20 +136,18 @@ function Viewer() {
         }
       })
       tree.push(node)
-      saveSocModel('SOC_Model', tree, queue)
     })
-
+    saveSocModel('SOC_Model', tree, queue)
     async function saveSocModel(name: string, tree: any[], queue: any[]) {
       while (queue.length) {
-        console.log(queue.length)
         const { node, name } = queue.shift()
         await saveSceneSync(node, name)
       }
-      console.log({
-        version: '2.0.0',
-        name,
-        tree,
-      })
+      // console.log({
+      //   version: '2.0.0',
+      //   name,
+      //   tree,
+      // })
       saveJson(
         {
           version: '2.0.0',
@@ -95,6 +156,7 @@ function Viewer() {
         },
         'modelTiles',
       )
+      send('NEXT') //完成
     }
 
     function saveSceneSync(group: Group, name: string) {
@@ -105,14 +167,14 @@ function Viewer() {
         }, 1000)
       })
     }
-  }, [gltf])
+  }, [gltf, send])
 
   return (
     <>
       <div id="Message">{message}</div>
       <div id="Viewer" ref={viewerRef}></div>
       <div id="UI">
-        <button onClick={handleGenerate}>生成漸進載入結構模型</button>
+        {showGenerate && <button onClick={handleGenerate}>生成漸進載入結構模型</button>}
       </div>
     </>
   )
