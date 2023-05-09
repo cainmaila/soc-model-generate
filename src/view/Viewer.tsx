@@ -7,7 +7,7 @@ import { Group, LoadingManager } from 'three'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { saveJson, saveScene } from '../utils/modelFileTools'
-import { createMachine } from 'xstate'
+import { createMachine, assign } from 'xstate'
 import { useMachine } from '@xstate/react'
 
 const manager = new LoadingManager()
@@ -19,14 +19,19 @@ loader.setDRACOLoader(dracoLoader)
 const toggleMachine = createMachine({
   id: 'xstate',
   initial: 'none',
+  context: {
+    upLoadOff: false, //是否關閉上傳
+  },
   states: {
     none: {
       //初始化狀態
       on: { NEXT: { target: 'uploading' }, ERROR: { target: 'error' } },
+      entry: ['setUpLoadOn'],
     },
     uploading: {
       //上傳中
       on: { NEXT: { target: 'analyze' }, ERROR: { target: 'error' } },
+      entry: ['setUpLoadOff'],
     },
     analyze: {
       //分析中
@@ -54,16 +59,24 @@ function Viewer() {
   const [isFirstLoad, setIsFirstLoad] = useState(false)
   const [gltf, setGltf] = useState<GLTF>()
 
-  const [state, send] = useMachine(toggleMachine)
+  const [state, send] = useMachine(toggleMachine, {
+    actions: {
+      setUpLoadOn: assign({
+        upLoadOff: false,
+      }),
+      setUpLoadOff: assign({
+        upLoadOff: true,
+      }),
+    },
+  })
 
   useEffect(() => {
-    switch (state.value) {
+    const { context, value } = state
+    switch (value) {
       case 'none':
-        upLoadOff(true)
         setMessage('請拖曳上傳一個 gltf 檔案')
         break
       case 'uploading':
-        upLoadOff(false)
         setMessage('Upload...')
         break
       case 'analyze':
@@ -78,6 +91,7 @@ function Viewer() {
       case 'error':
         break
     }
+    upLoadOff(context.upLoadOff)
   }, [state, upLoadOff])
 
   //是否要顯示生成按鈕
