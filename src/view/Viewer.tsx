@@ -91,7 +91,7 @@ function Viewer() {
       case 'error':
         break
     }
-    upLoadOff(context.upLoadOff)
+    upLoadOff(!context.upLoadOff)
   }, [state, upLoadOff])
 
   //是否要顯示生成按鈕
