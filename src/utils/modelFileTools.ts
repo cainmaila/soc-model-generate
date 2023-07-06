@@ -8,6 +8,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { Group, Matrix4, Object3D } from 'three'
 import axios from 'axios'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
+import { ZipTool } from './zipTools'
 
 /* 檔案讀取用 */
 const loader = new GLTFLoader()
@@ -239,6 +240,16 @@ export function saveScene(scene: Group, name: string | undefined) {
 }
 
 /**
+ * 轉成blob
+ * @param data - 要轉的資料
+ * @param isArrayBuffer - 是否為ArrayBuffer
+ * @returns {Blob} - 返回 Blob 对象。
+ */
+function _toBlob(data: any, isArrayBuffer: boolean = true) {
+  return new Blob([data], { type: isArrayBuffer ? 'application/octet-stream' : 'text/plain' })
+}
+
+/**
  * 该函数根据数据类型以 GLB 或 GLTF 格式保存模型。
  * @param {any} data - 数据参数的类型为“any”，这意味着它可以是任何数据类型。用于传递需要保存的模型数据。
  * @param {string} filename - filename 参数是一个字符串，表示将要保存的文件的名称。该函数将根据保存的数据类型添加文件扩展名（“.glb”或“.gltf”）。
@@ -259,10 +270,7 @@ function _saveModel(data: any, filename: string) {
  * @param {boolean} isArrayBuffer - glb?
  */
 function _saveArrayBuffer(buffer: BlobPart, filename: string, isArrayBuffer: boolean = true) {
-  _save(
-    new Blob([buffer], { type: isArrayBuffer ? 'application/octet-stream' : 'text/plain' }),
-    filename,
-  )
+  _save(_toBlob(buffer, isArrayBuffer), filename)
 }
 
 /**
@@ -275,4 +283,40 @@ function _save(blob: Blob, filename: string) {
   link.href = URL.createObjectURL(blob)
   link.download = filename
   link.click()
+}
+
+export class PackagedModel {
+  private _pag: ZipTool
+  constructor() {
+    this._pag = new ZipTool()
+  }
+  appScene(scene: Group, name: string) {
+    const _pag = this._pag
+
+    return new Promise<void>((resolve, reject) => {
+      exporter.parse(
+        scene,
+        // called when the gltf has been generated
+        function (model) {
+          if (model instanceof ArrayBuffer) {
+            _pag.appFileBlob(`${name}.glb`, _toBlob(model))
+          } else {
+            const output = JSON.stringify(model, null, 2)
+            _pag.appFileBlob(`${name}.gltf`, _toBlob(output))
+          }
+          resolve()
+        },
+        // called when there is an error in the generation
+        reject,
+        { binary: true, includeCustomExtensions: true },
+      )
+    })
+  }
+  appJson(data: Object, fileName: string) {
+    const output = JSON.stringify(data)
+    this._pag.appFileBlob(`${fileName}.json`, _toBlob(output, false))
+  }
+  generateZip(fileName: string, onComplete: () => void) {
+    this._pag.download(fileName, onComplete)
+  }
 }

@@ -3,10 +3,10 @@
 import { useThreeSceneInit } from '../hooks/threeSceneHooks'
 import { useDragFileUpload } from '../hooks/dragFileUploadHooks'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Group, LoadingManager } from 'three'
+import { LoadingManager } from 'three'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
-import { saveJson, saveScene } from '../utils/modelFileTools'
+import { PackagedModel } from '../utils/modelFileTools'
 import { createMachine, assign } from 'xstate'
 import { useMachine } from '@xstate/react'
 
@@ -153,16 +153,12 @@ function Viewer() {
     })
     saveSocModel('SOC_Model', tree, queue)
     async function saveSocModel(name: string, tree: any[], queue: any[]) {
+      const packagedModel = new PackagedModel()
       while (queue.length) {
         const { node, name } = queue.shift()
-        await saveSceneSync(node, name)
+        await packagedModel.appScene(node, name)
       }
-      // console.log({
-      //   version: '2.0.0',
-      //   name,
-      //   tree,
-      // })
-      saveJson(
+      packagedModel.appJson(
         {
           version: '2.0.0',
           name,
@@ -170,15 +166,8 @@ function Viewer() {
         },
         'modelTiles',
       )
-      send('NEXT') //完成
-    }
-
-    function saveSceneSync(group: Group, name: string) {
-      return new Promise<void>((resolve) => {
-        saveScene(group, name)
-        setTimeout(() => {
-          resolve()
-        }, 1000)
+      packagedModel.generateZip('hq39', () => {
+        send('NEXT') //完成
       })
     }
   }, [gltf, send])
