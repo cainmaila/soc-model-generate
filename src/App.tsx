@@ -1,22 +1,17 @@
-import { createBrowserRouter, RouterProvider } from 'react-router-dom'
+import { createHashRouter, RouterProvider } from 'react-router-dom'
 import './App.css'
 import { Viewer, Loader } from './view'
 
-const router = createBrowserRouter(
-  [
-    {
-      path: '/loader',
-      element: <Loader />,
-    },
-    {
-      path: '*',
-      element: <Viewer />,
-    },
-  ],
+const router = createHashRouter([
   {
-    basename: '/soc-model-generate',
+    path: '/loader',
+    element: <Loader />,
   },
-)
+  {
+    path: '',
+    element: <Viewer />,
+  },
+])
 
 function App() {
   return (
