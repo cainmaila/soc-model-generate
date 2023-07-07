@@ -1,3 +1,4 @@
 import Viewer from './Viewer'
+import Loader from './Loader'
 
-export { Viewer }
+export { Viewer, Loader }
