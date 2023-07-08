@@ -19,6 +19,7 @@ loader.setDRACOLoader(dracoLoader)
 const toggleMachine = createMachine({
   id: 'xstate',
   initial: 'none',
+  predictableActionArguments: true,
   context: {
     upLoadOff: false, //是否關閉上傳
   },
