@@ -3,7 +3,7 @@
 import { useThreeSceneInit } from '../hooks/threeSceneHooks'
 import { useDragFileUpload } from '../hooks/dragFileUploadHooks'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { LoadingManager, Object3D, Event } from 'three'
+import { LoadingManager, Object3D } from 'three'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { PackagedModel } from '../utils/modelFileTools'
