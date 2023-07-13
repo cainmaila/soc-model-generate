@@ -7,7 +7,7 @@ function Loader() {
 
   useLayoutEffect(() => {
     if (!viewerRef.current) return
-    const group = dtSocGroupLoader('/hq39', {
+    const group = dtSocGroupLoader('https://3d-models.eyeots.com/coral/0711/hq39-v2', {
       onProgress: (id: string) => {
         console.log(id)
       },
