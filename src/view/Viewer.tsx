@@ -3,12 +3,14 @@
 import { useThreeSceneInit } from '../hooks/threeSceneHooks'
 import { useDragFileUpload } from '../hooks/dragFileUploadHooks'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { LoadingManager } from 'three'
+import { LoadingManager, Matrix4, Object3D } from 'three'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { PackagedModel } from '../utils/modelFileTools'
 import { createMachine, assign } from 'xstate'
 import { useMachine } from '@xstate/react'
+
+const MOVABLE = 'Movable' /* Movable 是 iot 點位特別解析 */
 
 const manager = new LoadingManager()
 const loader = new GLTFLoader(manager)
@@ -19,6 +21,7 @@ loader.setDRACOLoader(dracoLoader)
 const toggleMachine = createMachine({
   id: 'xstate',
   initial: 'none',
+  predictableActionArguments: true,
   context: {
     upLoadOff: false, //是否關閉上傳
   },
@@ -129,9 +132,35 @@ function Viewer() {
 
   const handleGenerate = useCallback(() => {
     if (!gltf) return
-    const tree = [] as any[]
-    const queue = [] as any[]
+    const tree = [] as any[] //樹狀結構展開
+    const queue = [] as any[] //需要轉檔處理的終端節點
     send('NEXT') //拆解中
+
+    function generateEndNode(node: Object3D, parentId: string, isLoop: boolean): any {
+      if (isLoop && node.children.length > 0) {
+        return {
+          id: node.name,
+          parent: parentId,
+          matrix4: arrayToString(node.matrix.toArray() as unknown as string[]),
+          childs: node.children.map((child) => {
+            return generateEndNode(child, node.name, isLoop)
+          }),
+        }
+      }
+      queue.push({ node, name: `${node.name}` })
+      const matrix4 = arrayToString(node.matrix.toArray() as unknown as string[])
+      const m = new Matrix4()
+      m.copy(node.matrix)
+      m.invert()
+      node.applyMatrix4(m)
+      return {
+        id: node.name,
+        parent: parentId,
+        matrix4,
+        path: `${node.name}.glb`,
+      }
+    }
+
     gltf.scene.children.forEach((child) => {
       const node = {
         id: child.name,
@@ -140,14 +169,7 @@ function Viewer() {
       }
       //@ts-ignore
       node.childs = child.children.map((child) => {
-        queue.push({ node: child, name: `${node.id}_${child.name}` })
-        return {
-          id: child.name,
-          //@ts-ignore
-          parent: node.id,
-          matrix4: null,
-          path: `${node.id}_${child.name}.glb`,
-        }
+        return generateEndNode(child, node.id, node.id === MOVABLE)
       })
       tree.push(node)
     })
@@ -155,12 +177,13 @@ function Viewer() {
     async function saveSocModel(name: string, tree: any[], queue: any[]) {
       const packagedModel = new PackagedModel()
       while (queue.length) {
+        setMessage('拆解中...需要時間，請勿關閉網頁 待處理數量:' + queue.length)
         const { node, name } = queue.shift()
         await packagedModel.appScene(node, name)
       }
       packagedModel.appJson(
         {
-          version: '2.0.0',
+          version: '2.1.0',
           name,
           tree,
         },

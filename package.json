@@ -13,14 +13,18 @@
     "@xstate/react": "^3.2.2",
     "axios": "^1.4.0",
     "jszip": "^3.10.1",
+    "localforage": "^1.10.0",
+    "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.14.1",
     "three": "^0.152.2",
+    "three-stdlib": "^2.23.13",
     "usehooks-ts": "^2.9.1",
     "xstate": "^4.37.2"
   },
   "devDependencies": {
+    "@types/lodash": "^4.14.195",
     "@types/react": "^18.0.28",
     "@types/react-dom": "^18.0.11",
     "@types/three": "^0.152.0",
@@ -30,6 +34,8 @@
     "eslint": "^8.38.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.3.4",
+    "i": "^0.3.7",
+    "npm": "^9.8.0",
     "typescript": "^5.0.2",
     "vite": "^4.3.2"
   }

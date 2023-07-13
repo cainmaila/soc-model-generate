@@ -2,12 +2,12 @@ import { useEffect, useLayoutEffect, useRef } from 'react'
 import {
   WebGLRenderer,
   PCFSoftShadowMap,
-  sRGBEncoding,
   PerspectiveCamera,
   AmbientLight,
   Scene,
   HemisphereLight,
   PointLight,
+  SRGBColorSpace,
 } from 'three'
 import { useWindowSize } from 'usehooks-ts'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
@@ -46,7 +46,7 @@ export const useThreeSceneInit = () => {
     renderer.setPixelRatio(window.devicePixelRatio)
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = PCFSoftShadowMap
-    renderer.outputEncoding = sRGBEncoding
+    renderer.outputColorSpace = SRGBColorSpace
     const light = new AmbientLight(0x000000) // soft white light
     scene.add(light)
     const hemiLight = new HemisphereLight(0xddeeff, 0x0f0e0d, 1)
