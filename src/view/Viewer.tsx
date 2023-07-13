@@ -147,7 +147,7 @@ function Viewer() {
           }),
         }
       }
-      queue.push({ node, name: `${parentId}_${node.name}` })
+      queue.push({ node, name: `${node.name}` })
       const matrix4 = arrayToString(node.matrix.toArray() as unknown as string[])
       const m = new Matrix4()
       m.copy(node.matrix)
@@ -157,7 +157,7 @@ function Viewer() {
         id: node.name,
         parent: parentId,
         matrix4,
-        path: `${parentId}_${node.name}.glb`,
+        path: `${node.name}.glb`,
       }
     }
 
