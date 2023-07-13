@@ -31,8 +31,12 @@ function BaseViewer() {
         setMessage('')
         sceneRef.current.add(gltf.scene)
         setCameraToBestView(gltf.scene, cameraRef.current, controlsRef.current)
-      } catch (error: { meaaage: string }) {
-        setMessage(error.message)
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          setMessage(error?.message)
+        } else {
+          setMessage('發生未知錯誤')
+        }
       }
     }
   }, [viewerRef, sceneRef, cameraRef, controlsRef, path])
