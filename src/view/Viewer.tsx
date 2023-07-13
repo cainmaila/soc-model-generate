@@ -3,7 +3,7 @@
 import { useThreeSceneInit } from '../hooks/threeSceneHooks'
 import { useDragFileUpload } from '../hooks/dragFileUploadHooks'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { LoadingManager, Object3D } from 'three'
+import { LoadingManager, Matrix4, Object3D } from 'three'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { PackagedModel } from '../utils/modelFileTools'
@@ -148,10 +148,15 @@ function Viewer() {
         }
       }
       queue.push({ node, name: `${parentId}_${node.name}` })
+      const matrix4 = arrayToString(node.matrix.toArray() as unknown as string[])
+      const m = new Matrix4()
+      m.copy(node.matrix)
+      m.invert()
+      node.applyMatrix4(m)
       return {
         id: node.name,
         parent: parentId,
-        matrix4: null,
+        matrix4,
         path: `${parentId}_${node.name}.glb`,
       }
     }
