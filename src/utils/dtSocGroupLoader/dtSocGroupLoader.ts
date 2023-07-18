@@ -7,11 +7,6 @@ import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { I_ModelTiles, I_TreeNode } from './interface'
 
-//初始化localforage
-localforage.config({
-  name: 'Coral-Hq39',
-})
-
 /* 檔案讀取用 */
 const loader = new GLTFLoader()
 const dracoLoader = new DRACOLoader()
@@ -54,7 +49,11 @@ export function dtSocGroupLoader(treePath: string, options: I_dtSocGroupLoaderOp
  * 此函数循环遍历树结构并返回节点 ID 数组。
  */
 function _treeLoop(tilesJson: I_ModelTiles) {
-  const { tree, version } = tilesJson
+  const { tree, version, name } = tilesJson
+  //初始化localforage
+  localforage.config({
+    name: `${name}-${version}`,
+  })
   _config.version = version
   const queue: I_TreeNode[] = []
   _treeNodeLoop(tree, queue)
@@ -200,7 +199,7 @@ async function _loadModelAsync(
     try {
       let model = await localforage.getItem(path)
       if (!model) {
-        console.log('＃緩存', path)
+        console.info('＃緩存', path)
         const { data } = await axios.get(path, { responseType: 'blob' })
         model = data
         await localforage.setItem(path, data)
