@@ -1,13 +1,10 @@
-// import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
-import { GLTFLoader } from 'three-stdlib'
-// import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
-import { DRACOLoader } from 'three-stdlib'
 import { Group, Matrix4, Object3D } from 'three'
 import axios from 'axios'
 import _ from 'lodash'
-// import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter'
-import { GLTFExporter } from 'three-stdlib'
 import * as localforage from 'localforage'
+import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 
 //初始化localforage
 localforage.config({
