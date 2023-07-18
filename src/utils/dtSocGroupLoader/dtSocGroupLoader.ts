@@ -3,8 +3,9 @@ import axios from 'axios'
 import _ from 'lodash'
 import * as localforage from 'localforage'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
+import { I_ModelTiles, I_TreeNode } from './interface'
 
 //初始化localforage
 localforage.config({
@@ -52,20 +53,20 @@ export function dtSocGroupLoader(treePath: string, options: I_dtSocGroupLoaderOp
 /**
  * 此函数循环遍历树结构并返回节点 ID 数组。
  */
-function _treeLoop(tilesJson: { tree: any[]; version: string }) {
+function _treeLoop(tilesJson: I_ModelTiles) {
   const { tree, version } = tilesJson
   _config.version = version
-  const queue: any[] = []
+  const queue: I_TreeNode[] = []
   _treeNodeLoop(tree, queue)
   return queue.map((node) => node.id)
 }
 
-function _treeNodeLoop(nodeList: any[], queue: any[]) {
-  nodeList.forEach((node: any) => {
+function _treeNodeLoop(nodeList: I_TreeNode[], queue: I_TreeNode[]) {
+  nodeList.forEach((node: I_TreeNode) => {
     const { path, childs } = node
     if (path) {
       queue.push(node)
-    } else {
+    } else if (childs) {
       return _treeNodeLoop(childs, queue)
     }
   })
@@ -87,7 +88,7 @@ async function _loadTilesTree(
 }
 
 async function _loadTiles(
-  tilesJson: { tree: any[] },
+  tilesJson: I_ModelTiles,
   container: Object3D,
   options: I_dtSocGroupLoaderWorkerOptions = {},
 ) {
@@ -103,7 +104,7 @@ async function _loadTiles(
 }
 
 async function _treeLoopSync(
-  childs: any[],
+  childs: I_TreeNode[],
   container: Object3D,
   options: I_dtSocGroupLoaderWorkerOptions = {},
 ) {
@@ -122,7 +123,7 @@ async function _treeLoopSync(
 }
 
 async function _nodeLoadAsync(
-  node: any,
+  node: I_TreeNode,
   container: Object3D,
   options: I_dtSocGroupLoaderWorkerOptions = {},
 ) {
@@ -205,7 +206,6 @@ async function _loadModelAsync(
         await localforage.setItem(path, data)
       }
       const gltf = await _loadModelSync(URL.createObjectURL(model as unknown as Blob), onProgress)
-      //@ts-ignore
       gltf.scene.children.forEach((child) => {
         _container.add(child)
         if (_config.version !== '2.0.0') {
@@ -220,7 +220,7 @@ async function _loadModelAsync(
 }
 
 function _loadModelSync(path: string, onProgress?: (progress: number) => void) {
-  return new Promise((resolve, reject) => {
+  return new Promise<GLTF>((resolve, reject) => {
     loader.load(
       path,
       resolve,
@@ -240,11 +240,11 @@ const exporter = new GLTFExporter()
 
 /**
  * 此函数将 JSON 对象保存为文件。
- * @param {any} data - json物件
+ * @param {unknown} data - json物件
  * @param {string} filename - filename 该函数将向文件名添加“.json”扩展名，以确保将文件保存为
  * JSON 文件。
  */
-export function saveJson(data: any, filename: string) {
+export function saveJson(data: unknown, filename: string) {
   const output = JSON.stringify(data)
   _saveArrayBuffer(output, `${filename}.json`)
 }
@@ -272,7 +272,7 @@ export function saveScene(scene: Group, name: string | undefined) {
 /**
  * 此函数将 GLB 数据转换为 Blob 对象。
  */
-export function glbToBlob(glbData: any) {
+export function glbToBlob(glbData: BlobPart) {
   return new Blob([glbData], { type: 'application/octet-stream' })
 }
 
@@ -281,7 +281,7 @@ export function glbToBlob(glbData: any) {
  * @param {any} data - 数据参数的类型为“any”，这意味着它可以是任何数据类型。用于传递需要保存的模型数据。
  * @param {string} filename - filename 参数是一个字符串，表示将要保存的文件的名称。该函数将根据保存的数据类型添加文件扩展名（“.glb”或“.gltf”）。
  */
-function _saveModel(data: any, filename: string) {
+function _saveModel(data: unknown, filename: string) {
   if (data instanceof ArrayBuffer) {
     _saveArrayBuffer(data, `${filename}.glb`)
   } else {
@@ -296,7 +296,7 @@ function _saveModel(data: any, filename: string) {
  * @param {string} filename - 要下载的文件的所需名称。
  * @param {boolean} isArrayBuffer - glb?
  */
-function _saveArrayBuffer(buffer: BlobPart, filename: string, isArrayBuffer: boolean = true) {
+function _saveArrayBuffer(buffer: BlobPart, filename: string, isArrayBuffer = true) {
   _save(
     new Blob([buffer], { type: isArrayBuffer ? 'application/octet-stream' : 'text/plain' }),
     filename,

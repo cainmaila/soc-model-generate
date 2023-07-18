@@ -1,3 +1,3 @@
-import { dtSocGroupLoader } from '../modelFileTools'
+import { dtSocGroupLoader } from './dtSocGroupLoader'
 
 export { dtSocGroupLoader }
