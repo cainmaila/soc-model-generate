@@ -101,6 +101,7 @@ async function _loadTiles(
   await _treeLoopSync(treeSort, container, options)
   pathQueue.forEach((path) => {
     const a = container.getObjectByName(path)
+    if (!a) return
     localforage.getItem(path).then(async (model) => {
       const gltf = await _loadModelSync(URL.createObjectURL(model as unknown as Blob))
       gltf.scene.children.forEach((child) => {
