@@ -132,13 +132,13 @@ function Viewer() {
   }, [data, sceneRef, setMessage, send])
 
   const handleGenerate = useCallback(
-    (name: string = 'SOC_V2.2.0') => {
+    (name: string = 'SOC_V2.3.0') => {
       if (!gltf) return
       const tree = [] as any[] //樹狀結構展開
       const queue = [] as any[] //需要轉檔處理的終端節點
       send('NEXT') //拆解中
 
-      function generateEndNode(node: Object3D, parentId: string, isLoop: boolean): any {
+      function generateEndNode(node: Object3D | Mesh, parentId: string, isLoop: boolean): any {
         if (isLoop && node.children.length > 0) {
           return {
             id: node.name,
@@ -150,20 +150,24 @@ function Viewer() {
           }
         }
         queue.push({ node, name: `${node.name}` })
-        const box = new BoxHelper(node, 0xffff00)
-        // const mesh = node as Mesh
-        // mesh.geometry.computeBoundingBox()
-        // var bBox = mesh.geometry.boundingBox
-        console.log(1111, box)
         const matrix4 = arrayToString(node.matrix.toArray() as unknown as string[])
         const m = new Matrix4()
         m.copy(node.matrix)
         m.invert()
         node.applyMatrix4(m)
+        let box: string | null = null
+        if (node instanceof Mesh) {
+          const bBox = node.geometry.boundingBox
+          box = [bBox.min.x, bBox.min.y, bBox.min.z, bBox.max.x, bBox.max.y, bBox.max.z].toString()
+        } else {
+          const boxHelper = new BoxHelper(node)
+          box = boxHelper.geometry.getAttribute('position').array.toString()
+        }
         return {
           id: node.name,
           parent: parentId,
           matrix4,
+          box,
           path: `${node.name}.glb`,
         }
       }
@@ -181,6 +185,7 @@ function Viewer() {
         tree.push(node)
       })
       saveSocModel(name, tree, queue)
+      // send('NEXT') //完成
       async function saveSocModel(name: string, tree: any[], queue: any[]) {
         const packagedModel = new PackagedModel()
         while (queue.length) {
@@ -196,7 +201,7 @@ function Viewer() {
           },
           'modelTiles',
         )
-        packagedModel.generateZip('hq39', () => {
+        packagedModel.generateZip('hq39-v3', () => {
           send('NEXT') //完成
         })
       }
