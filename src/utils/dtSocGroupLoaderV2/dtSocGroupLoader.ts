@@ -100,15 +100,15 @@ async function _loadTiles(
   })
   await _treeLoopSync(treeSort, container, options)
   let len = 0
-  pathQueue.forEach(async (path) => {
-    const a = container.getObjectByName(path)
+  pathQueue.forEach(async ({ id, path }) => {
+    const a = container.getObjectByName(id)
     if (!a) return
-    localforage.getItem(path).then(async (model) => {
+    localforage.getItem(id).then(async (model) => {
       if (!model) {
-        console.info('＃緩存', path)
+        console.info('＃緩存', id)
         const { data } = await axios.get(path, { responseType: 'blob' })
         model = data
-        await localforage.setItem(path, data)
+        await localforage.setItem(id, data)
       }
       try {
         const gltf = await _loadModelSync(URL.createObjectURL(model as unknown as Blob))
@@ -166,7 +166,7 @@ async function _nodeLoadAsync(
           onQueue(queue)
           options.queue = queue.filter((item) => item !== id)
         }
-        const _group = await _loadModelAsync(`${root || ''}${path}`, container, matrix4)
+        const _group = await _loadModelAsync(id, `${root || ''}${path}`, container, matrix4)
         resolve(_group)
       } catch (err) {
         reject(err)
@@ -191,7 +191,7 @@ function _stringToArray(str: string) {
   return str.split(',').map((item) => parseFloat(item))
 }
 
-const pathQueue: string[] = []
+const pathQueue: { id: string; path: string }[] = []
 
 /**
  * 讀取模型
@@ -202,6 +202,7 @@ const pathQueue: string[] = []
  * @param setting.hasContainer 是否有容器
  */
 async function _loadModelAsync(
+  id: string,
   path: string,
   container: Object3D,
   matrix: string | null = null,
@@ -236,8 +237,8 @@ async function _loadModelAsync(
       if (_config.version !== '2.0.0') {
         cube.applyMatrix4(m)
       }
-      cube.name = path
-      pathQueue.push(path)
+      cube.name = id
+      pathQueue.push({ id, path })
       resolve(_container)
     } catch (err) {
       reject(err)
