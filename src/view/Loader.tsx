@@ -11,8 +11,11 @@ function Loader() {
     if (!viewerRef.current) return
     if (isInit) return
     const group = dtSocGroupLoader('https://3d-models.eyeots.com/coral/0711/hq39-v2', {
-      onProgress: (id: string) => {
+      onProgress: (id: number) => {
         console.log(id)
+      },
+      onComplete: () => {
+        console.log('complete')
       },
     })
     sceneRef.current.add(group)

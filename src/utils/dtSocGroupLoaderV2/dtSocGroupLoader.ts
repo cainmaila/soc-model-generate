@@ -19,7 +19,7 @@ const _config = {
 }
 
 interface I_dtSocGroupLoaderOptions {
-  onProgress?: (id: string) => void
+  onProgress?: (id: number) => void
   onComplete?: () => void
   onQueue?: (queue: string[]) => void
   root?: string
@@ -92,13 +92,14 @@ async function _loadTiles(
   options: I_dtSocGroupLoaderWorkerOptions = {},
 ) {
   const { tree } = tilesJson
-  const { onComplete } = options
+  const { onComplete, onProgress } = options
   //排序 Background 先 load
   const treeSort = _.sortBy(tree, function () {
     // return o.id === 'Background' ? 0 : 999
     return 0
   })
   await _treeLoopSync(treeSort, container, options)
+  let len = 0
   pathQueue.forEach(async (path) => {
     const a = container.getObjectByName(path)
     if (!a) return
@@ -115,10 +116,14 @@ async function _loadTiles(
         a.parent?.add(child)
         a.parent?.remove(a)
       })
+      await sleeper()
+      len++
+      onProgress && onProgress((len / pathQueue.length) * 100)
+      if (len === pathQueue.length) {
+        onComplete && onComplete()
+      }
     })
-    await sleeper()
   })
-  onComplete && onComplete()
 }
 
 async function _treeLoopSync(
@@ -146,7 +151,7 @@ async function _nodeLoadAsync(
   options: I_dtSocGroupLoaderWorkerOptions = {},
 ) {
   const { id, matrix4, path, childs } = node
-  const { onProgress, queue, onQueue, root } = options
+  const { queue, onQueue, root } = options
 
   // eslint-disable-next-line no-async-promise-executor
   return new Promise(async (resolve, reject) => {
@@ -157,7 +162,6 @@ async function _nodeLoadAsync(
           options.queue = queue.filter((item) => item !== id)
         }
         const _group = await _loadModelAsync(`${root || ''}${path}`, container, matrix4)
-        onProgress && onProgress(id)
         resolve(_group)
       } catch (err) {
         reject(err)
@@ -196,9 +200,9 @@ async function _loadModelAsync(
   path: string,
   container: Object3D,
   matrix: string | null = null,
-  setting: { hasContainer?: boolean; onProgress?: (progress: number) => void } = {},
+  setting: { hasContainer?: boolean } = {},
 ) {
-  const { hasContainer, onProgress } = setting
+  const { hasContainer } = setting
   let _container = container
   if (hasContainer) {
     const _group = new Group()
