@@ -110,19 +110,24 @@ async function _loadTiles(
         model = data
         await localforage.setItem(path, data)
       }
-      const gltf = await _loadModelSync(URL.createObjectURL(model as unknown as Blob))
-      gltf.scene.children.forEach((child) => {
-        child.applyMatrix4(a.matrix)
-        a.parent?.add(child)
-        a.parent?.remove(a)
-      })
-      await sleeper()
+      try {
+        const gltf = await _loadModelSync(URL.createObjectURL(model as unknown as Blob))
+        gltf.scene.children.forEach((child) => {
+          child.applyMatrix4(a.matrix)
+          a.parent?.add(child)
+          a.parent?.remove(a)
+        })
+      } catch (error) {
+        console.error('#_loadTiles error!', error)
+        localforage.removeItem(path)
+      }
       len++
       onProgress && onProgress((len / pathQueue.length) * 100)
       if (len === pathQueue.length) {
         onComplete && onComplete()
       }
     })
+    await sleeper(100)
   })
 }
 
