@@ -1,6 +1,6 @@
-import { Box3, BoxGeometry, Group, Matrix4, Mesh, MeshBasicMaterial, Object3D } from 'three'
+import { Group, Matrix4, Object3D } from 'three'
 import axios from 'axios'
-import _, { get } from 'lodash'
+import _ from 'lodash'
 import * as localforage from 'localforage'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
@@ -99,10 +99,16 @@ async function _loadTiles(
     return 0
   })
   await _treeLoopSync(treeSort, container, options)
-  pathQueue.forEach((path) => {
+  pathQueue.forEach(async (path) => {
     const a = container.getObjectByName(path)
     if (!a) return
     localforage.getItem(path).then(async (model) => {
+      if (!model) {
+        console.info('＃緩存', path)
+        const { data } = await axios.get(path, { responseType: 'blob' })
+        model = data
+        await localforage.setItem(path, data)
+      }
       const gltf = await _loadModelSync(URL.createObjectURL(model as unknown as Blob))
       gltf.scene.children.forEach((child) => {
         child.applyMatrix4(a.matrix)
@@ -110,6 +116,7 @@ async function _loadTiles(
         a.parent?.remove(a)
       })
     })
+    await sleeper()
   })
   onComplete && onComplete()
 }
@@ -121,16 +128,6 @@ async function _treeLoopSync(
 ) {
   let len = 0
   return new Promise<void>(async (resolve, reject) => {
-    // const queue = childs.map((child) => {
-    //   return _nodeLoadAsync(child, container, options)
-    // })
-    // try {
-    //   await Promise.all(queue)
-    //   resolve()
-    // } catch (error) {
-    //   reject(error)
-    // }
-
     while (childs.length > len) {
       try {
         await _nodeLoadAsync(childs[len], container, options)
@@ -221,31 +218,17 @@ async function _loadModelAsync(
   }
   return new Promise(async (resolve, reject) => {
     try {
-      const geometry = new BoxGeometry(10, 10, 10)
-      const material = new MeshBasicMaterial({ color: 0x00ff00 })
-      material.wireframe = true
-      const cube = new Mesh(geometry, material)
+      const cube = new Group()
+      // const geometry = new BoxGeometry(10, 10, 10)
+      // const material = new MeshBasicMaterial({ color: 0x00ff00 })
+      // material.wireframe = true
+      // const cube = new Mesh(geometry, material)
       _container.add(cube)
       if (_config.version !== '2.0.0') {
         cube.applyMatrix4(m)
       }
       cube.name = path
       pathQueue.push(path)
-
-      // let model = await localforage.getItem(path)
-      // if (!model) {
-      //   console.info('＃緩存', path)
-      //   const { data } = await axios.get(path, { responseType: 'blob' })
-      //   model = data
-      //   await localforage.setItem(path, data)
-      // }
-      // const gltf = await _loadModelSync(URL.createObjectURL(model as unknown as Blob), onProgress)
-      // gltf.scene.children.forEach((child) => {
-      //   _container.add(child)
-      //   if (_config.version !== '2.0.0') {
-      //     child.applyMatrix4(m)
-      //   }
-      // })
       resolve(_container)
     } catch (err) {
       reject(err)
@@ -347,4 +330,8 @@ function _save(blob: Blob, filename: string) {
   link.href = URL.createObjectURL(blob)
   link.download = filename
   link.click()
+}
+
+function sleeper(ms = 0) {
+  return new Promise<void>((resolve) => setTimeout(() => resolve(), ms))
 }
