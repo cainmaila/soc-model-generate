@@ -30,19 +30,56 @@ interface I_dtSocGroupLoaderWorkerOptions extends I_dtSocGroupLoaderOptions {
 }
 
 /**
- * dtsoc 模型資料讀取
+ * dtsoc 模型資料讀取 v1.0.0
  * @param {string} treePath - 包含图块树数据路徑。
  * @param {I_dtSocGroupLoaderOptions} options - `options` 参数是一个可选对象，可以包含用于 `dtSocGroupLoader`
  * 函数的额外配置选项。这些选项可用于自定义函数的行为并控制它加载图块树的方式。 `I_dtSocGroupLoaderOptions` 类型很可能
  * @returns 函数“dtSocGroupLoader”返回一个“Group”对象，其中包含已加载的图块树。
  */
 export function dtSocGroupLoader(treePath: string, options: I_dtSocGroupLoaderOptions = {}) {
-  options.root || (options.root = treePath + '/')
+  const _isTreeIsEndWithSlash = _isEndWithSlash(treePath)
+  const modelTilesPath = _isTreeIsEndWithSlash ? treePath + 'modelTiles.json' : treePath
+  const { root } = options
+  /*
+   * 如果有給root，且treePath不是api形式，模型路徑會變成 treePath+root+模型路徑
+   * 如果有給root，且treePath是api形式，模型路徑會變成 root+模型路徑
+   * 如果沒給root，且treePath不是api形式，模型路徑會變成 treePath+模型路徑
+   * 如果沒給root，且treePath是api形式，模型路徑會變成 直接用模型路徑
+   */
+  if (root) {
+    _isHttp(root)
+      ? _isEndWithSlash(root)
+        ? root
+        : root + '/'
+      : _isTreeIsEndWithSlash
+      ? treePath + root
+      : root
+  } else {
+    options.root = _isTreeIsEndWithSlash ? treePath : ''
+  }
   const group = new Group()
   group.name = '__root__'
   group.userData.name = group.name
-  _loadTilesTree(`${treePath}/modelTiles.json`, group, options)
+  _loadTilesTree(modelTilesPath, group, options)
   return group
+}
+
+/**
+ * 判斷字串是否為http開頭
+ * @param str - 字串
+ * @returns 是否為http開頭
+ */
+function _isHttp(str: string) {
+  return str.indexOf('http') === 0
+}
+
+/**
+ * 判斷結為是否為/結尾
+ * @param str - 字串
+ * @returns 是否為/結尾
+ */
+function _isEndWithSlash(str: string) {
+  return str[str.length - 1] === '/'
 }
 
 /**
