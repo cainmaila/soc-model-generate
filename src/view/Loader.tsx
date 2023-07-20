@@ -1,6 +1,6 @@
 import { useLayoutEffect } from 'react'
 import { useThreeSceneInit } from '../hooks/threeSceneHooks'
-import { dtSocGroupLoader } from '../utils/dtSocGroupLoaderV2'
+import { dtSocGroupLoader } from '../utils/dtSocGroupLoaderV3'
 
 let isInit = false //是否初始化旗標，避掉重複初始化
 

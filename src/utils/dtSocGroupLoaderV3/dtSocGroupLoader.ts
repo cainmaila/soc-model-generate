@@ -1,25 +1,20 @@
 import {
-  Box3,
-  Box3Helper,
   BoxGeometry,
   BoxHelper,
-  BufferAttribute,
-  BufferGeometry,
-  Color,
   Group,
+  Material,
   Matrix4,
   Mesh,
   MeshBasicMaterial,
   Object3D,
-  Vector3,
 } from 'three'
 import axios from 'axios'
 import _ from 'lodash'
 import * as localforage from 'localforage'
-import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { I_ModelTiles, I_TreeNode } from './interface'
+import { isEndWithSlash, modeRootHelper } from './tools'
 
 /* 檔案讀取用 */
 const loader = new GLTFLoader()
@@ -28,6 +23,7 @@ dracoLoader.setDecoderPath('/examples/jsm/libs/draco/')
 loader.setDRACOLoader(dracoLoader)
 const m = new Matrix4()
 
+//預設值
 const _config = {
   version: '1.0.0',
 }
@@ -51,7 +47,7 @@ interface I_dtSocGroupLoaderWorkerOptions extends I_dtSocGroupLoaderOptions {
  * @returns 函数“dtSocGroupLoader”返回一个“Group”对象，其中包含已加载的图块树。
  */
 export function dtSocGroupLoader(treePath: string, options: I_dtSocGroupLoaderOptions = {}) {
-  const _isTreeIsEndWithSlash = _isEndWithSlash(treePath)
+  const _isTreeIsEndWithSlash = isEndWithSlash(treePath)
   const modelTilesPath = _isTreeIsEndWithSlash ? treePath + 'modelTiles.json' : treePath
   const { root } = options
   /*
@@ -60,62 +56,12 @@ export function dtSocGroupLoader(treePath: string, options: I_dtSocGroupLoaderOp
    * 如果沒給root，且treePath不是api形式，模型路徑會變成 treePath+模型路徑
    * 如果沒給root，且treePath是api形式，模型路徑會變成 直接用模型路徑
    */
-  options.root = _modeRootHelper(root, treePath)
-  if (root) {
-    options.root = _isHttp(root)
-      ? _isEndWithSlash(root)
-        ? root
-        : root + '/'
-      : _isTreeIsEndWithSlash
-      ? treePath + root
-      : root
-  } else {
-    options.root = _isTreeIsEndWithSlash ? treePath : ''
-  }
+  options.root = modeRootHelper(root, treePath)
   const group = new Group()
   group.name = '__root__'
   group.userData.name = group.name
   _loadTilesTree(modelTilesPath, group, options)
   return group
-}
-
-/**
- * 判斷root是否有值，並組合模型路徑
- * @param root - root
- * @param treePath - 模型路徑
- * @returns 模型路徑
- */
-function _modeRootHelper(root: string | null | undefined, treePath: string) {
-  const _isTreeIsEndWithSlash = _isEndWithSlash(treePath)
-  if (root) {
-    return _isHttp(root)
-      ? _isEndWithSlash(root)
-        ? root
-        : root + '/'
-      : _isTreeIsEndWithSlash
-      ? treePath + root
-      : root
-  } else {
-    return _isTreeIsEndWithSlash ? treePath : ''
-  }
-}
-
-/**
- * 判斷字串是否為http開頭
- * @param str - 字串
- * @returns 是否為http開頭
- */
-function _isHttp(str: string) {
-  return str.indexOf('http') === 0
-}
-
-/**
- * 判斷結為是否為/結尾
- * @param str - 字串
- * @returns 是否為/結尾
- */
-function _isEndWithSlash(str: string) {
-  return str[str.length - 1] === '/'
 }
 
 /**
@@ -267,9 +213,8 @@ function _stringToArray(str: string) {
 }
 
 const pathQueue: { id: string; path: string }[] = []
-const RED = new Color(0x00ff44)
-const box3 = new Box3(new Vector3(-10, -10, -10), new Vector3(10, 10, 10))
-const material = new MeshBasicMaterial({
+//代替用的素材
+const replaceMaterial = new MeshBasicMaterial({
   color: 0x00ff44,
   transparent: true,
   opacity: 0.5,
@@ -309,32 +254,19 @@ async function _loadModelAsync(
   }
   return new Promise(async (resolve, reject) => {
     try {
+      const cube = new Group()
       const boxArr = box ? _stringToArray(box) : []
-      let cube
       switch (boxArr.length) {
-        case 6:
-          const geometry = new BoxGeometry(
-            _distance(boxArr[3], boxArr[0]),
-            _distance(boxArr[1], boxArr[4]),
-            _distance(boxArr[2], boxArr[5]),
-          )
-          const acube = new Mesh(geometry, material)
-          cube = new Group()
+        case 6: //Mesh的物件
+          const acube = _generateReplaceBox(boxArr, replaceMaterial)
           cube.add(acube)
           break
-        case 7:
-          const geometry2 = new BoxGeometry(
-            _distance(boxArr[3], boxArr[0]),
-            _distance(boxArr[1], boxArr[4]),
-            _distance(boxArr[2], boxArr[5]),
-          )
-          const acube2 = new Mesh(geometry2, material)
+        case 7: //非Mesh的物件會多一個長度 0
+          const acube2 = _generateReplaceBox(boxArr, replaceMaterial)
           const boxHelper = new BoxHelper(acube2)
-          cube = new Group()
           cube.add(boxHelper)
           break
         default:
-          cube = new Group()
       }
       if (_config.version !== '2.0.0') {
         cube.applyMatrix4(m)
@@ -347,6 +279,16 @@ async function _loadModelAsync(
       reject(err)
     }
   })
+}
+
+//生成代替用的方塊
+function _generateReplaceBox(boxArr: number[], replaceMaterial: Material) {
+  const geometry = new BoxGeometry(
+    _distance(boxArr[3], boxArr[0]),
+    _distance(boxArr[1], boxArr[4]),
+    _distance(boxArr[2], boxArr[5]),
+  )
+  return new Mesh(geometry, replaceMaterial)
 }
 
 //兩數距離
@@ -366,88 +308,6 @@ function _loadModelSync(path: string, onProgress?: (progress: number) => void) {
       reject,
     )
   })
-}
-
-/* 檔案下載用 */
-const link = document.createElement('a')
-link.style.display = 'none'
-const exporter = new GLTFExporter()
-
-/**
- * 此函数将 JSON 对象保存为文件。
- * @param {unknown} data - json物件
- * @param {string} filename - filename 该函数将向文件名添加“.json”扩展名，以确保将文件保存为
- * JSON 文件。
- */
-export function saveJson(data: unknown, filename: string) {
-  const output = JSON.stringify(data)
-  _saveArrayBuffer(output, `${filename}.json`)
-}
-
-/**
- * 此函数将 Three.js 场景导出为 glTF 文件。
- * @param {Group} scene - scene 参数是一个 Three.js Group 对象。
- * @param {string | undefined} name - name 表示正在保存的场景的名称。如果未定义，该函数将使用存储在场景对象的 userData 属性中的名称，不需要副檔名。
- */
-export function saveScene(scene: Group, name: string | undefined) {
-  exporter.parse(
-    scene,
-    // called when the gltf has been generated
-    function (model) {
-      _saveModel(model, name ? name : scene.userData.name)
-    },
-    // called when there is an error in the generation
-    function () {
-      console.log('An error happened')
-    },
-    { binary: true, includeCustomExtensions: true },
-  )
-}
-
-/**
- * 此函数将 GLB 数据转换为 Blob 对象。
- */
-export function glbToBlob(glbData: BlobPart) {
-  return new Blob([glbData], { type: 'application/octet-stream' })
-}
-
-/**
- * 该函数根据数据类型以 GLB 或 GLTF 格式保存模型。
- * @param {any} data - 数据参数的类型为“any”，这意味着它可以是任何数据类型。用于传递需要保存的模型数据。
- * @param {string} filename - filename 参数是一个字符串，表示将要保存的文件的名称。该函数将根据保存的数据类型添加文件扩展名（“.glb”或“.gltf”）。
- */
-function _saveModel(data: unknown, filename: string) {
-  if (data instanceof ArrayBuffer) {
-    _saveArrayBuffer(data, `${filename}.glb`)
-  } else {
-    const output = JSON.stringify(data, null, 2)
-    _saveArrayBuffer(output, `${filename}.gltf`)
-  }
-}
-
-/**
- * 该函数将数组缓冲区保存为具有指定文件名的文件。
- * @param {BlobPart} buffer - 一个 ArrayBuffer。
- * @param {string} filename - 要下载的文件的所需名称。
- * @param {boolean} isArrayBuffer - glb?
- */
-function _saveArrayBuffer(buffer: BlobPart, filename: string, isArrayBuffer = true) {
-  _save(
-    new Blob([buffer], { type: isArrayBuffer ? 'application/octet-stream' : 'text/plain' }),
-    filename,
-  )
-}
-
-/**
- * 该函数将 Blob 对象保存为具有指定文件名的文件。
- * @param {Blob} blob
- * 原生格式的数据，例如图像、视频或其他二进制数据。
- * @param {string} filename - 要下载的文件的所需名称
- */
-function _save(blob: Blob, filename: string) {
-  link.href = URL.createObjectURL(blob)
-  link.download = filename
-  link.click()
 }
 
 function sleeper(ms = 0) {
