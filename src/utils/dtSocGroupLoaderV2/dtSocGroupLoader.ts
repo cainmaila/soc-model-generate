@@ -46,8 +46,9 @@ export function dtSocGroupLoader(treePath: string, options: I_dtSocGroupLoaderOp
    * 如果沒給root，且treePath不是api形式，模型路徑會變成 treePath+模型路徑
    * 如果沒給root，且treePath是api形式，模型路徑會變成 直接用模型路徑
    */
+  options.root = _modeRootHelper(root, treePath)
   if (root) {
-    _isHttp(root)
+    options.root = _isHttp(root)
       ? _isEndWithSlash(root)
         ? root
         : root + '/'
@@ -62,6 +63,27 @@ export function dtSocGroupLoader(treePath: string, options: I_dtSocGroupLoaderOp
   group.userData.name = group.name
   _loadTilesTree(modelTilesPath, group, options)
   return group
+}
+
+/**
+ * 判斷root是否有值，並組合模型路徑
+ * @param root - root
+ * @param treePath - 模型路徑
+ * @returns 模型路徑
+ */
+function _modeRootHelper(root: string | null | undefined, treePath: string) {
+  const _isTreeIsEndWithSlash = _isEndWithSlash(treePath)
+  if (root) {
+    return _isHttp(root)
+      ? _isEndWithSlash(root)
+        ? root
+        : root + '/'
+      : _isTreeIsEndWithSlash
+      ? treePath + root
+      : root
+  } else {
+    return _isTreeIsEndWithSlash ? treePath : ''
+  }
 }
 
 /**
