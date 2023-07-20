@@ -1,4 +1,18 @@
-import { Group, Matrix4, Object3D } from 'three'
+import {
+  Box3,
+  Box3Helper,
+  BoxGeometry,
+  BoxHelper,
+  BufferAttribute,
+  BufferGeometry,
+  Color,
+  Group,
+  Matrix4,
+  Mesh,
+  MeshBasicMaterial,
+  Object3D,
+  Vector3,
+} from 'three'
 import axios from 'axios'
 import _ from 'lodash'
 import * as localforage from 'localforage'
@@ -214,7 +228,7 @@ async function _nodeLoadAsync(
   container: Object3D,
   options: I_dtSocGroupLoaderWorkerOptions = {},
 ) {
-  const { id, matrix4, path, childs } = node
+  const { id, matrix4, path, childs, box } = node
   const { queue, onQueue, root } = options
 
   // eslint-disable-next-line no-async-promise-executor
@@ -225,7 +239,9 @@ async function _nodeLoadAsync(
           onQueue(queue)
           options.queue = queue.filter((item) => item !== id)
         }
-        const _group = await _loadModelAsync(id, `${root || ''}${path}`, container, matrix4)
+        const _group = await _loadModelAsync(id, `${root || ''}${path}`, container, matrix4, {
+          box,
+        })
         resolve(_group)
       } catch (err) {
         reject(err)
@@ -251,7 +267,13 @@ function _stringToArray(str: string) {
 }
 
 const pathQueue: { id: string; path: string }[] = []
-
+const RED = new Color(0x00ff44)
+const box3 = new Box3(new Vector3(-10, -10, -10), new Vector3(10, 10, 10))
+const material = new MeshBasicMaterial({
+  color: 0x00ff44,
+  transparent: true,
+  opacity: 0.5,
+})
 /**
  * 讀取模型
  * @param path 模型路徑
@@ -265,9 +287,9 @@ async function _loadModelAsync(
   path: string,
   container: Object3D,
   matrix: string | null = null,
-  setting: { hasContainer?: boolean } = {},
+  setting: { hasContainer?: boolean; box?: string } = {},
 ) {
-  const { hasContainer } = setting
+  const { hasContainer, box } = setting
   let _container = container
   if (hasContainer) {
     const _group = new Group()
@@ -287,22 +309,49 @@ async function _loadModelAsync(
   }
   return new Promise(async (resolve, reject) => {
     try {
-      const cube = new Group()
-      // const geometry = new BoxGeometry(10, 10, 10)
-      // const material = new MeshBasicMaterial({ color: 0x00ff00 })
-      // material.wireframe = true
-      // const cube = new Mesh(geometry, material)
-      _container.add(cube)
+      const boxArr = box ? _stringToArray(box) : []
+      let cube
+      switch (boxArr.length) {
+        case 6:
+          const geometry = new BoxGeometry(
+            _distance(boxArr[3], boxArr[0]),
+            _distance(boxArr[1], boxArr[4]),
+            _distance(boxArr[2], boxArr[5]),
+          )
+          const acube = new Mesh(geometry, material)
+          cube = new Group()
+          cube.add(acube)
+          break
+        case 7:
+          const geometry2 = new BoxGeometry(
+            _distance(boxArr[3], boxArr[0]),
+            _distance(boxArr[1], boxArr[4]),
+            _distance(boxArr[2], boxArr[5]),
+          )
+          const acube2 = new Mesh(geometry2, material)
+          const boxHelper = new BoxHelper(acube2)
+          cube = new Group()
+          cube.add(boxHelper)
+          break
+        default:
+          cube = new Group()
+      }
       if (_config.version !== '2.0.0') {
         cube.applyMatrix4(m)
       }
       cube.name = id
+      _container.add(cube)
       pathQueue.push({ id, path })
       resolve(_container)
     } catch (err) {
       reject(err)
     }
   })
+}
+
+//兩數距離
+function _distance(a: number, b: number) {
+  return Math.abs(a - b)
 }
 
 function _loadModelSync(path: string, onProgress?: (progress: number) => void) {

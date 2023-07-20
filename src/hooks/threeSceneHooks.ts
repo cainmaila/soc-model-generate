@@ -19,7 +19,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 export const useThreeSceneInit = () => {
   const viewerRef = useRef<HTMLDivElement>(null)
   const cameraRef = useRef<PerspectiveCamera>(
-    new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000),
+    new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.001, 99999),
   )
   const sceneRef = useRef<Scene>(new Scene())
   const rendererRef = useRef<WebGLRenderer>()

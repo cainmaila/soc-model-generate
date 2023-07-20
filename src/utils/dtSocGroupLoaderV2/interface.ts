@@ -7,6 +7,7 @@ export interface I_TreeNode {
   matrix4?: string | null
   childs?: I_TreeNode[]
   path?: string | null
+  box?: string
 }
 
 /**

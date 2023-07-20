@@ -3,7 +3,7 @@
 import { useThreeSceneInit } from '../hooks/threeSceneHooks'
 import { useDragFileUpload } from '../hooks/dragFileUploadHooks'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Box3Helper, BoxHelper, LoadingManager, Matrix4, Mesh, Object3D } from 'three'
+import { Box3, BoxHelper, LoadingManager, Matrix4, Mesh, Object3D } from 'three'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { PackagedModel } from '../utils/modelFileTools'
@@ -11,7 +11,8 @@ import { createMachine, assign } from 'xstate'
 import { useMachine } from '@xstate/react'
 
 const MOVABLE = 'Movable' /* Movable 是 iot 點位特別解析 */
-const VETSION = '2.2.0'
+const VETSION = '2.3.0'
+const MODEL_NAME = 'hq39-v4'
 
 const manager = new LoadingManager()
 const loader = new GLTFLoader(manager)
@@ -132,7 +133,7 @@ function Viewer() {
   }, [data, sceneRef, setMessage, send])
 
   const handleGenerate = useCallback(
-    (name: string = 'SOC_V2.3.0') => {
+    (name: string) => {
       if (!gltf) return
       const tree = [] as any[] //樹狀結構展開
       const queue = [] as any[] //需要轉檔處理的終端節點
@@ -161,7 +162,17 @@ function Viewer() {
           box = [bBox.min.x, bBox.min.y, bBox.min.z, bBox.max.x, bBox.max.y, bBox.max.z].toString()
         } else {
           const boxHelper = new BoxHelper(node)
-          box = boxHelper.geometry.getAttribute('position').array.toString()
+          boxHelper.geometry.computeBoundingBox()
+          const bBox2 = boxHelper.geometry.boundingBox as Box3
+          box = [
+            bBox2.min.x,
+            bBox2.min.y,
+            bBox2.min.z,
+            bBox2.max.x,
+            bBox2.max.y,
+            bBox2.max.z,
+            0, //證明是大箱子
+          ].toString()
         }
         return {
           id: node.name,
@@ -201,7 +212,7 @@ function Viewer() {
           },
           'modelTiles',
         )
-        packagedModel.generateZip('hq39-v3', () => {
+        packagedModel.generateZip(MODEL_NAME, () => {
           send('NEXT') //完成
         })
       }
@@ -214,7 +225,9 @@ function Viewer() {
       <div id="Message">{message}</div>
       <div id="Viewer" ref={viewerRef}></div>
       <div id="UI">
-        {showGenerate && <button onClick={() => handleGenerate()}>生成漸進載入結構模型</button>}
+        {showGenerate && (
+          <button onClick={() => handleGenerate(MODEL_NAME)}>生成漸進載入結構模型</button>
+        )}
       </div>
     </>
   )
