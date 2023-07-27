@@ -29,6 +29,7 @@ const _config = {
 }
 
 interface I_dtSocGroupLoaderOptions {
+  onJson?: (json: I_ModelTiles) => void
   onProgress?: (id: number) => void
   onComplete?: () => void
   onQueue?: (queue: string[]) => void
@@ -96,7 +97,9 @@ async function _loadTilesTree(
   options: I_dtSocGroupLoaderOptions = {},
 ) {
   try {
+    const { onJson } = options
     const { data } = await axios.get(treePath)
+    onJson && onJson(data) //返回json
     const queue: string[] = _treeLoop(data) //掃描樹狀結構
     _loadTiles(data, container, { queue, ...options }) //讀取模型
   } catch (error) {
