@@ -9,7 +9,7 @@ import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { PackagedModel } from '../utils/modelFileTools'
 import { createMachine, assign } from 'xstate'
 import { useMachine } from '@xstate/react'
-import { useDarkMode } from 'usehooks-ts'
+// import { useDarkMode } from 'usehooks-ts'
 
 const MOVABLE = 'Movable' /* Movable 是 iot 點位特別解析 */
 const VETSION = '2.3.0'
@@ -59,7 +59,7 @@ const toggleMachine = createMachine({
 })
 
 function Viewer() {
-  const { isDarkMode } = useDarkMode() //是否為暗黑模式
+  // const { isDarkMode } = useDarkMode() //是否為暗黑模式
   const { viewerRef, sceneRef } = useThreeSceneInit()
   const { data, isLoading, setOff: upLoadOff } = useDragFileUpload(viewerRef.current)
   const [message, setMessage] = useState('')

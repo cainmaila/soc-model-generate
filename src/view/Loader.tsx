@@ -2,6 +2,7 @@ import { useLayoutEffect, useState } from 'react'
 import { useThreeSceneInit } from '../hooks/threeSceneHooks'
 import { dtSocGroupLoader } from '../utils/dtSocGroupLoaderV3'
 import { LoadingBar } from '../components/LoadingBar'
+import ModelTree from '../components/ModelTree'
 
 let isInit = false //是否初始化旗標，避掉重複初始化
 
@@ -32,6 +33,7 @@ function Loader() {
   return (
     <>
       <LoadingBar progress={progress} show={loadingShow}></LoadingBar>
+      <ModelTree></ModelTree>
       <div id="Viewer" ref={viewerRef}></div>
     </>
   )
