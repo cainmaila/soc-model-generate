@@ -28,3 +28,10 @@ export function setCameraToBestView(
   controls.maxDistance = size * 10
   controls.saveState()
 }
+
+/**
+ * 此函数将 GLB 数据转换为 Blob 对象。
+ */
+export function glbToBlob(glbData: BlobPart) {
+  return new Blob([glbData], { type: 'application/octet-stream' })
+}

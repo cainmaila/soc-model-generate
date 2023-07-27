@@ -3,7 +3,7 @@
 import { useThreeSceneInit } from '../hooks/threeSceneHooks'
 import { useDragFileUpload } from '../hooks/dragFileUploadHooks'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { LoadingManager, Matrix4, Object3D } from 'three'
+import { Box3, BoxHelper, LoadingManager, Matrix4, Mesh, Object3D } from 'three'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { PackagedModel } from '../utils/modelFileTools'
@@ -12,6 +12,8 @@ import { useMachine } from '@xstate/react'
 import { useDarkMode } from 'usehooks-ts'
 
 const MOVABLE = 'Movable' /* Movable 是 iot 點位特別解析 */
+const VETSION = '2.3.0'
+const MODEL_NAME = 'hq39-v4'
 
 const manager = new LoadingManager()
 const loader = new GLTFLoader(manager)
@@ -132,77 +134,102 @@ function Viewer() {
     )
   }, [data, sceneRef, setMessage, send])
 
-  const handleGenerate = useCallback(() => {
-    if (!gltf) return
-    const tree = [] as any[] //樹狀結構展開
-    const queue = [] as any[] //需要轉檔處理的終端節點
-    send('NEXT') //拆解中
+  const handleGenerate = useCallback(
+    (name: string) => {
+      if (!gltf) return
+      const tree = [] as any[] //樹狀結構展開
+      const queue = [] as any[] //需要轉檔處理的終端節點
+      send('NEXT') //拆解中
 
-    function generateEndNode(node: Object3D, parentId: string, isLoop: boolean): any {
-      if (isLoop && node.children.length > 0) {
+      function generateEndNode(node: Object3D | Mesh, parentId: string, isLoop: boolean): any {
+        if (isLoop && node.children.length > 0) {
+          return {
+            id: node.name,
+            parent: parentId,
+            matrix4: arrayToString(node.matrix.toArray() as unknown as string[]),
+            childs: node.children.map((child) => {
+              return generateEndNode(child, node.name, isLoop)
+            }),
+          }
+        }
+        queue.push({ node, name: `${node.name}` })
+        const matrix4 = arrayToString(node.matrix.toArray() as unknown as string[])
+        const m = new Matrix4()
+        m.copy(node.matrix)
+        m.invert()
+        node.applyMatrix4(m)
+        let box: string | null = null
+        if (node instanceof Mesh) {
+          const bBox = node.geometry.boundingBox
+          box = [bBox.min.x, bBox.min.y, bBox.min.z, bBox.max.x, bBox.max.y, bBox.max.z].toString()
+        } else {
+          const boxHelper = new BoxHelper(node)
+          boxHelper.geometry.computeBoundingBox()
+          const bBox2 = boxHelper.geometry.boundingBox as Box3
+          box = [
+            bBox2.min.x,
+            bBox2.min.y,
+            bBox2.min.z,
+            bBox2.max.x,
+            bBox2.max.y,
+            bBox2.max.z,
+            0, //證明是大箱子
+          ].toString()
+        }
         return {
           id: node.name,
           parent: parentId,
-          matrix4: arrayToString(node.matrix.toArray() as unknown as string[]),
-          childs: node.children.map((child) => {
-            return generateEndNode(child, node.name, isLoop)
-          }),
+          matrix4,
+          box,
+          path: `${node.name}.glb`,
         }
       }
-      queue.push({ node, name: `${node.name}` })
-      const matrix4 = arrayToString(node.matrix.toArray() as unknown as string[])
-      const m = new Matrix4()
-      m.copy(node.matrix)
-      m.invert()
-      node.applyMatrix4(m)
-      return {
-        id: node.name,
-        parent: parentId,
-        matrix4,
-        path: `${node.name}.glb`,
-      }
-    }
 
-    gltf.scene.children.forEach((child) => {
-      const node = {
-        id: child.name,
-        parent: null,
-        matrix4: arrayToString(child.matrix.toArray() as unknown as string[]),
-      }
-      //@ts-ignore
-      node.childs = child.children.map((child) => {
-        return generateEndNode(child, node.id, node.id === MOVABLE)
+      gltf.scene.children.forEach((child) => {
+        const node = {
+          id: child.name,
+          parent: null,
+          matrix4: arrayToString(child.matrix.toArray() as unknown as string[]),
+        }
+        //@ts-ignore
+        node.childs = child.children.map((child) => {
+          return generateEndNode(child, node.id, node.id === MOVABLE)
+        })
+        tree.push(node)
       })
-      tree.push(node)
-    })
-    saveSocModel('SOC_Model', tree, queue)
-    async function saveSocModel(name: string, tree: any[], queue: any[]) {
-      const packagedModel = new PackagedModel()
-      while (queue.length) {
-        setMessage('拆解中...需要時間，請勿關閉網頁 待處理數量:' + queue.length)
-        const { node, name } = queue.shift()
-        await packagedModel.appScene(node, name)
+      saveSocModel(name, tree, queue)
+      // send('NEXT') //完成
+      async function saveSocModel(name: string, tree: any[], queue: any[]) {
+        const packagedModel = new PackagedModel()
+        while (queue.length) {
+          setMessage('拆解中...需要時間，請勿關閉網頁 待處理數量:' + queue.length)
+          const { node, name } = queue.shift()
+          await packagedModel.appScene(node, name)
+        }
+        packagedModel.appJson(
+          {
+            version: VETSION,
+            name,
+            tree,
+          },
+          'modelTiles',
+        )
+        packagedModel.generateZip(MODEL_NAME, () => {
+          send('NEXT') //完成
+        })
       }
-      packagedModel.appJson(
-        {
-          version: '2.1.0',
-          name,
-          tree,
-        },
-        'modelTiles',
-      )
-      packagedModel.generateZip('hq39', () => {
-        send('NEXT') //完成
-      })
-    }
-  }, [gltf, send])
+    },
+    [gltf, send],
+  )
 
   return (
     <>
       <div id="Message">{message}</div>
       <div id="Viewer" ref={viewerRef}></div>
       <div id="UI">
-        {showGenerate && <button onClick={handleGenerate}>生成漸進載入結構模型</button>}
+        {showGenerate && (
+          <button onClick={() => handleGenerate(MODEL_NAME)}>生成漸進載入結構模型</button>
+        )}
       </div>
     </>
   )
