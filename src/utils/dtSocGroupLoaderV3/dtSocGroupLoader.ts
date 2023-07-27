@@ -44,7 +44,7 @@ interface I_dtSocGroupLoaderWorkerOptions extends I_dtSocGroupLoaderOptions {
  * @param {string} treePath - 包含图块树数据路徑。
  * @param {I_dtSocGroupLoaderOptions} options - `options` 参数是一个可选对象，可以包含用于 `dtSocGroupLoader`
  * 函数的额外配置选项。这些选项可用于自定义函数的行为并控制它加载图块树的方式。 `I_dtSocGroupLoaderOptions` 类型很可能
- * @returns 函数“dtSocGroupLoader”返回一个“Group”对象，其中包含已加载的图块树。
+ * @returns 函数dtSocGroupLoader返回一个Group对象，其中包含已加载的图块树。
  */
 export function dtSocGroupLoader(treePath: string, options: I_dtSocGroupLoaderOptions = {}) {
   const _isTreeIsEndWithSlash = isEndWithSlash(treePath)
