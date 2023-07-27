@@ -1,7 +1,6 @@
 import { Box } from '@mui/material'
 import { cardStyle } from '../../sx'
 import { I_TreeNode } from '../../utils/dtSocGroupLoaderV3/interface'
-import { useEffect, useMemo } from 'react'
 import TreeItem from '@mui/lab/TreeItem'
 import TreeView from '@mui/lab/TreeView'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'

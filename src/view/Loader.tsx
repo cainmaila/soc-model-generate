@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useState } from 'react'
 import { useThreeSceneInit } from '../hooks/threeSceneHooks'
 import { dtSocGroupLoader } from '../utils/dtSocGroupLoaderV3'
 import { LoadingBar } from '../components/LoadingBar'
