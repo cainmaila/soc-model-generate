@@ -14,7 +14,7 @@ import * as localforage from 'localforage'
 import { GLTF, GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js'
 import { I_ModelTiles, I_TreeNode } from './interface'
-import { isEndWithSlash, modeRootHelper } from './tools'
+import { isEndWithSlash, modeRootHelper, sleeper } from './tools'
 
 /* 檔案讀取用 */
 const loader = new GLTFLoader()
@@ -308,8 +308,4 @@ function _loadModelSync(path: string, onProgress?: (progress: number) => void) {
       reject,
     )
   })
-}
-
-function sleeper(ms = 0) {
-  return new Promise<void>((resolve) => setTimeout(() => resolve(), ms))
 }

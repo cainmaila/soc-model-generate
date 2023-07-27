@@ -1,3 +1,7 @@
+export function sleeper(ms = 0) {
+  return new Promise<void>((resolve) => setTimeout(() => resolve(), ms))
+}
+
 /**
  * 判斷root是否有值，並組合模型路徑
  * @param root - root
