@@ -12,7 +12,7 @@ import {
 } from 'three'
 import { useWindowSize } from 'usehooks-ts'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { setCameraToBestView } from '../utils/threeTools'
+import { flyToBestView } from '../utils/threeTools'
 
 export interface I_ThreeSceneInitSettings {
   clearColor?: number
@@ -99,7 +99,7 @@ export const useThreeSceneInit = (setting: I_ThreeSceneInitSettings = {}) => {
     (obj: Object3D) => {
       if (!cameraRef.current) return null
       if (!controlsRef.current) return null
-      return setCameraToBestView(obj, cameraRef.current, controlsRef.current)
+      return flyToBestView(obj, cameraRef.current, controlsRef.current)
     },
     [cameraRef, controlsRef],
   )

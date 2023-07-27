@@ -7,6 +7,7 @@ import { I_ModelTiles } from '../utils/dtSocGroupLoaderV3/interface'
 import { delay } from '../utils/tools'
 import _ from 'lodash'
 import { Object3D } from 'three'
+import { moveCameraToPosition } from '../utils/threeTools'
 
 let isInit = false //是否初始化旗標，避掉重複初始化
 

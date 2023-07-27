@@ -1,5 +1,6 @@
 import { Box3, Object3D, PerspectiveCamera, Vector3 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { gsap } from 'gsap'
 
 /**
  * 將鏡頭設置到最佳視野
@@ -29,6 +30,39 @@ export function setCameraToBestView(
   controls.target.copy(center)
   controls.maxDistance = size * 10
   controls.saveState()
+  return box
+}
+
+/**
+ * 飛到最佳視野
+ * @param obj
+ * @param camera
+ * @param controls
+ * @returns
+ */
+export function flyToBestView(obj: Object3D, camera: PerspectiveCamera, controls: OrbitControls) {
+  const box = new Box3().setFromObject(obj)
+  if (box.max.x === -Infinity) return null
+  const size = box.getSize(new Vector3()).length()
+  const center = box.getCenter(new Vector3())
+  const po = center.clone()
+  po.x += size / 2.0
+  po.y += size / 5.0
+  po.z += size / 2.0
+  controls.target.copy(center)
+  controls.maxDistance = size * 10
+  gsap.to(camera.position, {
+    ...po,
+    onUpdate: () => {
+      camera.updateProjectionMatrix()
+      camera.lookAt(center)
+      controls.update()
+    },
+    duration: 3,
+    onComplete: () => {
+      controls.saveState()
+    },
+  })
   return box
 }
 
