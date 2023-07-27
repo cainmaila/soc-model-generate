@@ -1,6 +1,9 @@
 import { createHashRouter, RouterProvider } from 'react-router-dom'
 import './App.css'
-import { Viewer, Loader, BaseViewer } from './view'
+import { Viewer, BaseViewer } from './view'
+import { lazy, Suspense } from 'react'
+
+const Loader = lazy(() => import('./view/Loader'))
 
 const router = createHashRouter([
   {
@@ -9,7 +12,11 @@ const router = createHashRouter([
   },
   {
     path: '/loader',
-    element: <Loader />,
+    element: (
+      <Suspense fallback={<div>Loading...</div>}>
+        <Loader />
+      </Suspense>
+    ),
   },
   {
     path: '',
