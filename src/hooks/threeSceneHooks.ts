@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import {
   WebGLRenderer,
   PCFSoftShadowMap,
@@ -8,9 +8,11 @@ import {
   HemisphereLight,
   PointLight,
   SRGBColorSpace,
+  Object3D,
 } from 'three'
 import { useWindowSize } from 'usehooks-ts'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { setCameraToBestView } from '../utils/threeTools'
 
 export interface I_ThreeSceneInitSettings {
   clearColor?: number
@@ -67,7 +69,7 @@ export const useThreeSceneInit = (setting: I_ThreeSceneInitSettings = {}) => {
     const controls = new OrbitControls(cameraRef.current, renderer.domElement)
     controlsRef.current = controls
 
-    cameraRef.current.position.z = 50
+    cameraRef.current.position.z = 1
 
     animate()
     function animate() {
@@ -93,11 +95,21 @@ export const useThreeSceneInit = (setting: I_ThreeSceneInitSettings = {}) => {
     rendererRef.current.setClearColor(clearColor || 0x888888)
   }, [clearColor, rendererRef])
 
+  const setBestView = useCallback(
+    (obj: Object3D) => {
+      if (!cameraRef.current) return null
+      if (!controlsRef.current) return null
+      return setCameraToBestView(obj, cameraRef.current, controlsRef.current)
+    },
+    [cameraRef, controlsRef],
+  )
+
   return {
     viewerRef,
     cameraRef,
     sceneRef,
     rendererRef,
     controlsRef,
+    setBestView,
   }
 }

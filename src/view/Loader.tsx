@@ -4,12 +4,14 @@ import { dtSocGroupLoader } from '../utils/dtSocGroupLoaderV3'
 import { LoadingBar } from '../components/LoadingBar'
 import ModelTree from '../components/ModelTree'
 import { I_ModelTiles } from '../utils/dtSocGroupLoaderV3/interface'
+import { delay } from '../utils/tools'
 import _ from 'lodash'
+import { Object3D } from 'three'
 
 let isInit = false //是否初始化旗標，避掉重複初始化
 
 function Loader() {
-  const { viewerRef, sceneRef } = useThreeSceneInit()
+  const { viewerRef, sceneRef, setBestView } = useThreeSceneInit()
   const [progress, setProgress] = useState(0)
   const [loadingShow, setLoadingShow] = useState(false)
   const [modelJson, setModelJson] = useState<I_ModelTiles>()
@@ -32,6 +34,13 @@ function Loader() {
     })
     sceneRef.current.add(group)
     isInit = true
+    settingCamera(group)
+    async function settingCamera(group: Object3D) {
+      await delay(1)
+      const box = setBestView(group)
+      //呼叫自己
+      if (!box) settingCamera(group)
+    }
   }, [viewerRef, sceneRef, setProgress, setModelJson])
 
   const movable = useMemo(() => {

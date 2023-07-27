@@ -6,6 +6,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
  * @param obj - 物件
  * @param camera - 鏡頭
  * @param controls - 控制器
+ * @returns 返回一個Box3對象，其中包含物件的邊界框。如果物件沒有邊界框，則返回null。
  */
 export function setCameraToBestView(
   obj: Object3D,
@@ -13,6 +14,7 @@ export function setCameraToBestView(
   controls: OrbitControls,
 ) {
   const box = new Box3().setFromObject(obj)
+  if (box.max.x === -Infinity) return null
   const size = box.getSize(new Vector3()).length()
   const center = box.getCenter(new Vector3())
   //   camera.near = size / 100
@@ -27,6 +29,7 @@ export function setCameraToBestView(
   controls.target.copy(center)
   controls.maxDistance = size * 10
   controls.saveState()
+  return box
 }
 
 /**
