@@ -33,9 +33,6 @@ export function setCameraToBestView(
   return box
 }
 
-let tween: gsap.core.Tween | null = null
-let tween2: gsap.core.Tween | null = null
-let tween3: gsap.core.Tween | null = null
 const sizeOb = { nowSize: 0 }
 
 /**
@@ -57,12 +54,13 @@ export function flyToBestView(obj: Object3D, camera: PerspectiveCamera, controls
   po.y += size / 10.0
   po.z += size / 2.0
 
-  if (tween) tween.kill()
-  if (tween2) tween2.kill()
-  if (tween3) tween3.kill()
+  gsap.getById('size')?.kill()
+  gsap.getById('center')?.kill()
+  gsap.getById('position')?.kill()
 
-  tween3 = gsap.to(sizeOb, {
+  gsap.to(sizeOb, {
     nowSize: size,
+    id: 'size',
     onUpdate: () => {
       controls.maxDistance = sizeOb.nowSize * 10
       // controls.update()
@@ -73,8 +71,9 @@ export function flyToBestView(obj: Object3D, camera: PerspectiveCamera, controls
     },
   })
 
-  tween2 = gsap.to(nowCenter, {
+  gsap.to(nowCenter, {
     ...center,
+    id: 'center',
     onUpdate: () => {
       camera.lookAt(nowCenter)
       controls.target.copy(nowCenter)
@@ -86,11 +85,11 @@ export function flyToBestView(obj: Object3D, camera: PerspectiveCamera, controls
     },
   })
 
-  tween = gsap.to(camera.position, {
+  gsap.to(camera.position, {
     ...po,
+    id: 'position',
     onUpdate: () => {
       camera.updateProjectionMatrix()
-      // camera.lookAt(center)
       controls.update()
     },
     duration: 3,
