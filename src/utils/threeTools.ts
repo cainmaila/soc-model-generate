@@ -42,7 +42,12 @@ const sizeOb = { nowSize: 0 }
  * @param controls
  * @returns
  */
-export function flyToBestView(obj: Object3D, camera: PerspectiveCamera, controls: OrbitControls) {
+export function flyToBestView(
+  obj: Object3D,
+  camera: PerspectiveCamera,
+  controls: OrbitControls,
+  duration: 1.5,
+) {
   const box = new Box3().setFromObject(obj)
   if (box.max.x === -Infinity) return null
   const size = box.getSize(new Vector3()).length() * 1.5 /* 距離 1~ */
@@ -57,34 +62,23 @@ export function flyToBestView(obj: Object3D, camera: PerspectiveCamera, controls
   gsap.getById('size')?.kill()
   gsap.getById('center')?.kill()
   gsap.getById('position')?.kill()
-
   gsap.to(sizeOb, {
     nowSize: size,
     id: 'size',
     onUpdate: () => {
       controls.maxDistance = sizeOb.nowSize * 10
-      // controls.update()
     },
-    duration: 1.5,
-    onComplete: () => {
-      // controls.saveState()
-    },
+    duration,
   })
-
   gsap.to(nowCenter, {
     ...center,
     id: 'center',
     onUpdate: () => {
       camera.lookAt(nowCenter)
       controls.target.copy(nowCenter)
-      // controls.update()
     },
-    duration: 1.5,
-    onComplete: () => {
-      // controls.saveState()
-    },
+    duration,
   })
-
   gsap.to(camera.position, {
     ...po,
     id: 'position',
@@ -92,7 +86,7 @@ export function flyToBestView(obj: Object3D, camera: PerspectiveCamera, controls
       camera.updateProjectionMatrix()
       controls.update()
     },
-    duration: 1.5,
+    duration,
     onComplete: () => {
       controls.saveState()
     },
