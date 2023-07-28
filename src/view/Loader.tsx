@@ -50,10 +50,14 @@ function Loader() {
     return _.find(tree, { id: 'Movable' })
   }, [modelJson])
 
+  const onSelected = (id: string) => {
+    console.log('onSelected=>', id)
+  }
+
   return (
     <>
       <LoadingBar progress={progress} show={loadingShow}></LoadingBar>
-      {movable ? <ModelTree movable={movable}></ModelTree> : null}
+      {movable ? <ModelTree movable={movable} onSelected={onSelected}></ModelTree> : null}
       <div id="Viewer" ref={viewerRef}></div>
     </>
   )
