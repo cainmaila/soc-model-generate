@@ -65,7 +65,7 @@ export function flyToBestView(obj: Object3D, camera: PerspectiveCamera, controls
       controls.maxDistance = sizeOb.nowSize * 10
       // controls.update()
     },
-    duration: 3,
+    duration: 1.5,
     onComplete: () => {
       // controls.saveState()
     },
