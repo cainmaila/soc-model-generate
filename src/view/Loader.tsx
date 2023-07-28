@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useThreeSceneInit } from '../hooks/threeSceneHooks'
 import { dtSocGroupLoader } from '../utils/dtSocGroupLoaderV3'
 import { LoadingBar } from '../components/LoadingBar'
@@ -7,14 +7,16 @@ import { I_ModelTiles } from '../utils/dtSocGroupLoaderV3/interface'
 import { delay } from '../utils/tools'
 import _ from 'lodash'
 import { Object3D } from 'three'
+import { flyToBestView } from '../utils/threeTools'
 
 let isInit = false //是否初始化旗標，避掉重複初始化
 
 function Loader() {
-  const { viewerRef, sceneRef, setBestView } = useThreeSceneInit()
+  const { viewerRef, sceneRef, setBestView, cameraRef, controlsRef } = useThreeSceneInit()
   const [progress, setProgress] = useState(0)
   const [loadingShow, setLoadingShow] = useState(false)
   const [modelJson, setModelJson] = useState<I_ModelTiles>()
+  const groupRef = useRef<Object3D>()
 
   useLayoutEffect(() => {
     if (!viewerRef.current) return
@@ -35,13 +37,14 @@ function Loader() {
     sceneRef.current.add(group)
     isInit = true
     settingCamera(group)
+    groupRef.current = group
     async function settingCamera(group: Object3D) {
       await delay(1)
       const box = setBestView(group)
       //呼叫自己
       if (!box) settingCamera(group)
     }
-  }, [viewerRef, sceneRef, setProgress, setModelJson])
+  }, [viewerRef, sceneRef, setProgress, setModelJson, groupRef])
 
   const movable = useMemo(() => {
     if (!modelJson) return undefined
@@ -50,7 +53,10 @@ function Loader() {
   }, [modelJson])
 
   const onSelected = (id: string) => {
-    console.log('onSelected=>', id)
+    if (!groupRef.current) return
+    if (!controlsRef.current) return
+    const object3D = groupRef.current.getObjectByName(id)
+    object3D && flyToBestView(object3D, cameraRef.current, controlsRef.current)
   }
 
   return (
