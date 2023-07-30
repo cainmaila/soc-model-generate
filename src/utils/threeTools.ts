@@ -46,7 +46,7 @@ export function flyToBestView(
   obj: Object3D,
   camera: PerspectiveCamera,
   controls: OrbitControls,
-  duration: 1.5,
+  duration: number = 1.5,
 ) {
   const box = new Box3().setFromObject(obj)
   if (box.max.x === -Infinity) return null
