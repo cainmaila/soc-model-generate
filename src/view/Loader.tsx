@@ -8,7 +8,6 @@ import { delay } from '../utils/tools'
 import _ from 'lodash'
 import { Object3D } from 'three'
 import { flyToBestView } from '../utils/threeTools'
-import { gsap } from 'gsap'
 
 let isInit = false //是否初始化旗標，避掉重複初始化
 
