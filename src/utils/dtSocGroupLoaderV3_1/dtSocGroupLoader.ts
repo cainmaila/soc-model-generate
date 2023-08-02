@@ -47,7 +47,7 @@ interface I_dtSocGroupLoaderWorkerOptions extends I_dtSocGroupLoaderOptions {
  * 函数的额外配置选项。这些选项可用于自定义函数的行为并控制它加载图块树的方式。 `I_dtSocGroupLoaderOptions` 类型很可能
  * @returns 函数dtSocGroupLoader返回一个Group对象，其中包含已加载的图块树。
  */
-export function dtSocGroupLoader(tree: string | Object, options: I_dtSocGroupLoaderOptions = {}) {
+export function dtSocGroupLoader(tree: any, options: I_dtSocGroupLoaderOptions = {}) {
   let modelTilesPath: string | Object
   if (typeof tree === 'string') {
     const _isTreeIsEndWithSlash = isEndWithSlash(tree)
@@ -61,7 +61,7 @@ export function dtSocGroupLoader(tree: string | Object, options: I_dtSocGroupLoa
      */
     options.root = modeRootHelper(root, tree)
   } else {
-    modelTilesPath = tree
+    modelTilesPath = tree as I_ModelTiles
   }
   const group = new Group()
   group.name = '__root__'
