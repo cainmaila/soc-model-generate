@@ -22,7 +22,7 @@ function Loader() {
     if (!viewerRef.current) return
     if (isInit) return
     // const group = dtSocGroupLoader('hq39-v4/', {
-    const group = dtSocGroupLoader('https://3d-models.eyeots.com/coral/0725/hq39-v4/', {
+    const group = dtSocGroupLoader('https://3d-models.eyeots.com/coral/0725/hq39-lite-v4/', {
       root: '',
       onJson: setModelJson,
       onProgress: (progress: number) => {
