@@ -42,26 +42,32 @@ interface I_dtSocGroupLoaderWorkerOptions extends I_dtSocGroupLoaderOptions {
 
 /**
  * dtsoc 模型資料讀取 v1.0.0
- * @param {string} treePath - 包含图块树数据路徑。
+ * @param {string|Object} tree - 树数据或路徑路徑。
  * @param {I_dtSocGroupLoaderOptions} options - `options` 参数是一个可选对象，可以包含用于 `dtSocGroupLoader`
  * 函数的额外配置选项。这些选项可用于自定义函数的行为并控制它加载图块树的方式。 `I_dtSocGroupLoaderOptions` 类型很可能
  * @returns 函数dtSocGroupLoader返回一个Group对象，其中包含已加载的图块树。
  */
-export function dtSocGroupLoader(treePath: string, options: I_dtSocGroupLoaderOptions = {}) {
-  const _isTreeIsEndWithSlash = isEndWithSlash(treePath)
-  const modelTilesPath = _isTreeIsEndWithSlash ? treePath + 'modelTiles.json' : treePath
-  const { root } = options
-  /*
-   * 如果有給root，且treePath不是api形式，模型路徑會變成 treePath+root+模型路徑
-   * 如果有給root，且treePath是api形式，模型路徑會變成 root+模型路徑
-   * 如果沒給root，且treePath不是api形式，模型路徑會變成 treePath+模型路徑
-   * 如果沒給root，且treePath是api形式，模型路徑會變成 直接用模型路徑
-   */
-  options.root = modeRootHelper(root, treePath)
+export function dtSocGroupLoader(tree: string | Object, options: I_dtSocGroupLoaderOptions = {}) {
+  let modelTilesPath: string | Object
+  if (typeof tree === 'string') {
+    const _isTreeIsEndWithSlash = isEndWithSlash(tree)
+    modelTilesPath = _isTreeIsEndWithSlash ? tree + 'modelTiles.json' : tree
+    const { root } = options
+    /*
+     * 如果有給root，且treePath不是api形式，模型路徑會變成 treePath+root+模型路徑
+     * 如果有給root，且treePath是api形式，模型路徑會變成 root+模型路徑
+     * 如果沒給root，且treePath不是api形式，模型路徑會變成 treePath+模型路徑
+     * 如果沒給root，且treePath是api形式，模型路徑會變成 直接用模型路徑
+     */
+    options.root = modeRootHelper(root, tree)
+  } else {
+    modelTilesPath = tree
+  }
   const group = new Group()
   group.name = '__root__'
   group.userData.name = group.name
   _loadTilesTree(modelTilesPath, group, options)
+
   return group
 }
 
@@ -92,16 +98,22 @@ function _treeNodeLoop(nodeList: I_TreeNode[], queue: I_TreeNode[]) {
 }
 
 async function _loadTilesTree(
-  treePath: string,
+  treePath: string | Object,
   container: Object3D,
   options: I_dtSocGroupLoaderOptions = {},
 ) {
+  const { onJson } = options
+  let mata: I_ModelTiles
   try {
-    const { onJson } = options
-    const { data } = await axios.get(treePath)
-    onJson && onJson(data) //返回json
-    const queue: string[] = _treeLoop(data) //掃描樹狀結構
-    _loadTiles(data, container, { queue, ...options }) //讀取模型
+    if (treePath instanceof Object) {
+      mata = treePath as I_ModelTiles
+    } else {
+      const { data } = await axios.get(treePath)
+      mata = data
+    }
+    onJson && onJson(mata) //返回json
+    const queue: string[] = _treeLoop(mata) //掃描樹狀結構
+    _loadTiles(mata, container, { queue, ...options }) //讀取模型
   } catch (error) {
     console.error('#loadTilesTree error!', error)
     return
